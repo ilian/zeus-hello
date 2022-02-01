@@ -36,3 +36,27 @@ jobs:
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
+    - name: Set up kustomize
+      id: setup-kustomize
+      uses: imranismail/setup-kustomize@v1
+
+    - name: Update image name on zeus-infra
+      id: update-infra
+      env:
+        GITHUB_USER: ilian
+        GITHUB_TOKEN: ${{ secrets.gh_token }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        # Git setup
+        git config --global user.email 25505957+ilian@users.noreply.github.com
+        git config --global user.name ZeusCI
+        git clone https://github.com/ilian/zeus-infra --depth 1
+
+        cd zeus-infra/zeus-hello/staging
+        git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/ilian/zeus-infra
+        kustomize edit set image "zeus-hello=zeus-hello:$IMAGE_TAG"
+
+        git commit -am "Set zeus-hello image tag to $IMAGE_TAG"
+        git push
+
+
