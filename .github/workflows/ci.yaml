@@ -45,6 +45,8 @@ jobs:
       env:
         GITHUB_USER: ilian
         GITHUB_TOKEN: ${{ secrets.gh_token }}
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: zeus-hello
         IMAGE_TAG: ${{ github.sha }}
       run: |
         # Git setup
@@ -54,7 +56,7 @@ jobs:
 
         cd zeus-infra/zeus-hello/staging
         git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/ilian/zeus-infra
-        kustomize edit set image "zeus-hello=zeus-hello:$IMAGE_TAG"
+        kustomize edit set image "zeus-hello=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
         git commit -am "Set zeus-hello image tag to $IMAGE_TAG"
         git push
