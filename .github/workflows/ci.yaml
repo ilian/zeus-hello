@@ -33,8 +33,11 @@ jobs:
         ECR_REPOSITORY: zeus-hello
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        FQIN="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+        docker build -t "$FQIN" .
+        docker push "$FQIN"
+        echo "::set-output name=tag::$IMAGE_TAG"
+        echo "::set-output name=fqin::$FQIN"
 
     - name: Set up kustomize
       id: setup-kustomize
@@ -43,11 +46,7 @@ jobs:
     - name: Update image name on zeus-infra
       id: update-infra
       env:
-        GITHUB_USER: ilian
         GITHUB_TOKEN: ${{ secrets.gh_token }}
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: zeus-hello
-        IMAGE_TAG: ${{ github.sha }}
       run: |
         # Git setup
         git config --global user.email 25505957+ilian@users.noreply.github.com
@@ -56,9 +55,7 @@ jobs:
 
         cd zeus-infra/zeus-hello/staging
         git remote set-url origin https://x-access-token:$GITHUB_TOKEN@github.com/ilian/zeus-infra
-        kustomize edit set image "zeus-hello=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+        kustomize edit set image "zeus-hello=${{ steps.build-image.outputs.fqin }}"
 
-        git commit -am "Set zeus-hello image tag to $IMAGE_TAG"
+        git commit -am "Set zeus-hello image tag to ${{ steps.build-image.outputs.tag }}"
         git push
-
-
